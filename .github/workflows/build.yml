@@ -1,0 +1,39 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Kernel for Moto G45
+    runs-on: ubuntu-latest
+
+    env:
+      ARCH: arm64
+      SUBARCH: arm64
+      CC: clang
+      CROSS_COMPILE: ""
+
+    steps:
+      - name: Checkout Kernel Source
+        run: |
+          git clone --depth=1 https://github.com/Motorola-SM6375-Devs/android_kernel_motorola_sm6375.git ~/android_kernel_motorola_sm6375
+          git clone --depth=1 https://github.com/tiann/KernelSU.git ~/kernel_su
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update && sudo apt upgrade -y
+          sudo apt install -y build-essential clang git wget unzip curl bc bison flex libncurses-dev libssl-dev python3 python3-pip cpio
+
+      - name: Build Kernel
+        working-directory: ~/android_kernel_motorola_sm6375
+        run: |
+          make mrproper
+          make defconfig
+          make -j$(nproc)
+
+      - name: Upload Kernel Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: kernel-build
+          path: ~/android_kernel_motorola_sm6375/arch/arm64/boot/Image.gz
